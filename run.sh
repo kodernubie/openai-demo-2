@@ -1,4 +1,4 @@
 clear
-export API_KEY="xxxx"
+export API_KEY="xxxyyx"
 go build -o demo
 ./demo
