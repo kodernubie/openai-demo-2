@@ -1,0 +1,117 @@
+<html>
+<head>
+    <script>
+        var ws = null
+
+        function addText(text) {
+            document.getElementById("chatBox").innerHTML += "<div style=\"margin-top:10px\">" + text + "</div>"
+        }
+
+        function initWS() {
+            console.log("init ws.....")
+            ws = new WebSocket('/ws/assistant');
+            
+            ws.onopen = (event) => {
+                addText("connected...")
+            };
+
+            ws.onmessage = (event) => {
+                
+                js = JSON.parse(event.data)
+                console.log(js)
+
+                if (js.reqType == "error") {
+                    addText("Error : " + js.payload)
+                } else if (js.reqType == "assistantResponse") {
+                    addText("Assistant created : " + js.payload)
+                } else if (js.reqType == "chat") {
+                    addText("Assistant : " + js.payload)
+                } else if (js.reqType == "uploadRes") {
+                    addText("File Uploaded : " + js.payload)
+                }
+            };     
+
+            ws.onerror = (event) => {
+
+                initWS()
+            };
+        }
+
+        function createAssistant() {
+
+            name = document.getElementById("txtName").value
+            instruction = document.getElementById("txtInstruction").value
+
+            ws.send(JSON.stringify({
+                reqType : "assistantCreate",
+                name : name,
+                instruction : instruction
+            })) 
+        }
+
+        function send() {
+
+            question = document.getElementById("txtQuestion").value
+            addText("You : " + document.getElementById("txtQuestion").value)
+
+            ws.send(JSON.stringify({
+                reqType : "chat",
+                payload : question
+            })) 
+
+            document.getElementById("txtQuestion").value = ""
+        }
+
+        function upload() {
+
+            var file = document.getElementById('filename').files[0];
+            var reader = new FileReader();
+            var data = "";            
+
+            reader.loadend = function() {
+            }
+
+            reader.onload = function(e) {
+
+                data = e.target.result;
+
+                console.log(data)
+
+                ws.send(JSON.stringify({
+                    reqType : "upload",
+                    payload : data
+                }))
+            }
+
+            reader.readAsText(file);
+        }
+    </script>
+</head>
+<body onload="initWS()">
+    <div>DEMO Assistant</div>
+    <br>
+    <div>
+        Assistant Name :&nbsp;<input id="txtName" type="text">
+        <br><br>
+        Instruction :<textarea id="txtInstruction" rows="5"></textarea>
+        <br><br>
+        <button onclick="createAssistant()">Create Assistant</button>
+    </div>
+    <br>
+    <br>
+    <div id="chatBox" style="border: 1px solid #000000; height: 300px;overflow: auto;padding: 5px;"></div>
+    <br>
+    <div>
+        Question : <input id="txtQuestion" type="text">
+        <br>
+        <button onclick="send()">Send</button>
+    </div>
+    <br>
+    <br>
+    <div>
+        Upload File : <input type="file" id="filename" />
+        <br>
+        <button onclick="upload()">Upload</button>
+    </div>
+</body>
+</html>
